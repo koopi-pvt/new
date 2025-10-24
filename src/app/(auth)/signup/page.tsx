@@ -12,10 +12,10 @@ import {
 } from 'lucide-react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, getDoc, runTransaction, increment } from 'firebase/firestore';
-import { auth, db } from '../../firebase';
+import { auth, db } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import Lottie from "lottie-react";
-import animationData from "../../../public/loading-animation.json";
+import animationData from "@/../public/loading-animation.json";
 import withoutAuth from '@/components/withoutAuth';
 
 const sellLocations = [

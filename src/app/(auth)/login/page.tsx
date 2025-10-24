@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { ArrowRight, Mail, Lock, AlertCircle, Sparkles } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../firebase';
+import { auth } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import withoutAuth from '@/components/withoutAuth';
 import { doc, getDoc } from "firebase/firestore";
