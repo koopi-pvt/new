@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { uploadFile } from '@/lib/supabase';
 import { Globe, Save, Eye, EyeOff, Palette, Type, Image as ImageIcon, ExternalLink, Upload, Trash2, Layout, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
@@ -23,6 +23,7 @@ export default function WebsitePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [storeName, setStoreName] = useState('');
+  const [storeSlug, setStoreSlug] = useState(''); // New state for the actual store slug
   const [hasProducts, setHasProducts] = useState(false);
   const [sectionOrder, setSectionOrder] = useState(['hero', 'about']);
   const [templateId, setTemplateId] = useState('classic');
@@ -77,6 +78,23 @@ export default function WebsitePage() {
       if (storeDoc.exists()) {
         const storeData = storeDoc.data();
         setHasProducts(storeData.hasProducts || false);
+        
+        // Find the actual store slug from the storeNames collection
+        const storeNamesRef = collection(db, 'storeNames');
+        const q = query(storeNamesRef, where('userId', '==', user.uid));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          // Get the document ID which is the actual slug
+          const slug = querySnapshot.docs[0].id;
+          setStoreSlug(slug);
+        } else {
+          // Fallback to a generated slug if not found
+          const generatedSlug = userProfile.storeName 
+            ? userProfile.storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+            : '';
+          setStoreSlug(generatedSlug);
+        }
         
         const website = storeData.website || {};
         setWebsiteEnabled(website.enabled || false);
@@ -341,7 +359,8 @@ export default function WebsitePage() {
     );
   }
 
-  const storeUrl = userProfile?.storeName ? `/store/${userProfile.storeName}` : '#';
+  // Use the actual store slug for the URL
+  const storeUrl = storeSlug ? `/store/${storeSlug}` : '#';
 
   const renderSection = (sectionKey: string) => {
     switch (sectionKey) {

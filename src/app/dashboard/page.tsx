@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -12,6 +13,7 @@ import QuickActionsWidget from '@/components/dashboard/QuickActionsWidget';
 import GrowthCenter from '@/components/dashboard/GrowthCenter';
 import BrandingAnimation from '@/components/dashboard/BrandingAnimation';
 import AnimatedWidget from '@/components/dashboard/AnimatedWidget';
+import { Share2, ArrowRight } from 'lucide-react';
 
 const DashboardHomePage = () => {
   const { user, loading } = useAuth();
@@ -19,8 +21,10 @@ const DashboardHomePage = () => {
   const [hasCustomizedStore, setHasCustomizedStore] = useState(false);
   const [storeName, setStoreName] = useState('');
   const [storeUrl, setStoreUrl] = useState('');
+  const [isStoreEnabled, setIsStoreEnabled] = useState(false);
   const [showSocialMediaKit, setShowSocialMediaKit] = useState(false);
   const [welcomeCardCompleted, setWelcomeCardCompleted] = useState(false);
+  const [storeDataLoading, setStoreDataLoading] = useState(true); // New state for store data loading
 
   useEffect(() => {
     if (user) {
@@ -28,16 +32,27 @@ const DashboardHomePage = () => {
       const unsubscribe = onSnapshot(storeDocRef, (docSnap) => {
         if (docSnap.exists()) {
           const storeData = docSnap.data();
+          console.log("Store data:", storeData); // Debug log
           setHasProducts(storeData.hasProducts === true);
           setHasCustomizedStore(storeData.hasCustomizedStore === true);
           setWelcomeCardCompleted(storeData.hasProducts === true && storeData.hasCustomizedStore === true);
           setStoreName(storeData.storeName || '');
+          
+          // Check if store is enabled
+          const websiteEnabled = storeData.website?.enabled === true;
+          setIsStoreEnabled(websiteEnabled);
+          
           if (storeData.storeName) {
             const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
             setStoreUrl(`${baseUrl}/store/${storeData.storeName}`);
           }
-          setShowSocialMediaKit(!!storeData.storeName);
+          // Show social media kit only if store name exists and store is enabled
+          setShowSocialMediaKit(!!storeData.storeName && websiteEnabled);
+        } else {
+          console.log("No store document found for user:", user.uid); // Debug log
         }
+        // Set loading to false once we have the data
+        setStoreDataLoading(false);
       });
       return () => unsubscribe();
     }
@@ -60,24 +75,27 @@ const DashboardHomePage = () => {
         </AnimatedWidget>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8 items-start">
           <div className="lg:col-span-3 space-y-6 sm:space-y-8">
-            {welcomeCardCompleted ? (
-              <AnimatedWidget>
-                <div className="space-y-6 sm:space-y-8">
-                  <QuickActionsWidget />
-                  <BrandingAnimation />
-                </div>
-              </AnimatedWidget>
-            ) : (
-              <AnimatedWidget>
-                <WelcomeCard
-                  hasProducts={hasProducts}
-                  hasCustomizedStore={hasCustomizedStore}
-                  hasPaymentSetup={false}
-                />
-              </AnimatedWidget>
+            {/* Only show welcome card or main content when store data is loaded */}
+            {!storeDataLoading && (
+              welcomeCardCompleted ? (
+                <AnimatedWidget>
+                  <div className="space-y-6 sm:space-y-8">
+                    <QuickActionsWidget />
+                    <BrandingAnimation />
+                  </div>
+                </AnimatedWidget>
+              ) : (
+                <AnimatedWidget>
+                  <WelcomeCard
+                    hasProducts={hasProducts}
+                    hasCustomizedStore={hasCustomizedStore}
+                    hasPaymentSetup={false}
+                  />
+                </AnimatedWidget>
+              )
             )}
          </div>
-         {showSocialMediaKit && storeName && (
+         {showSocialMediaKit && storeName ? (
            <div className="lg:col-span-2 space-y-6 sm:space-y-8">
              <SocialMediaKitCard
                storeName={storeName}
@@ -86,6 +104,38 @@ const DashboardHomePage = () => {
               <AnimatedWidget>
                 <GrowthCenter />
               </AnimatedWidget>
+            </div>
+          ) : (
+            // Show a helpful message instead of hiding the section completely
+            <div className="lg:col-span-2 space-y-6 sm:space-y-8">
+              <div className="backdrop-blur-2xl bg-white/70 rounded-[24px] border border-white/30 shadow-2xl p-6 sm:p-8 h-full flex flex-col">
+                <div className="flex items-center gap-3 mb-4">
+                  <Share2 className="w-6 h-6 text-blue-500" />
+                  <h3 className="text-lg font-bold text-gray-900">Social Media Kit</h3>
+                </div>
+                <p className="text-gray-600 text-sm mb-4">
+                  {storeName 
+                    ? isStoreEnabled 
+                      ? "Complete your store setup to unlock powerful social sharing tools that help you promote your store."
+                      : "Enable your store to unlock social sharing tools that help you promote your brand."
+                    : "Create your store first to unlock social sharing tools that help you promote your brand."}
+                </p>
+                {!storeName ? (
+                  <div className="mt-4">
+                    <Link href="/dashboard/website" className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors">
+                      Create Your Store
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                ) : !isStoreEnabled ? (
+                  <div className="mt-4">
+                    <Link href="/dashboard/website" className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors">
+                      Enable Your Store
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
             </div>
           )}
         </div>
