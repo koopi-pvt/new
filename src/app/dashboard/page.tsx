@@ -73,8 +73,18 @@ const DashboardHomePage = () => {
           setIsStoreEnabled(websiteEnabled);
           
           if (storeSlugValue) {
-            const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-            setStoreUrl(`${baseUrl}/store/${storeSlugValue}`);
+            // Use subdomain format for store URL
+            const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'koopi.online';
+            const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+            
+            if (isLocalhost) {
+              // For localhost development, use path-based URLs
+              const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+              setStoreUrl(`${baseUrl}/store/${storeSlugValue}`);
+            } else {
+              // For production, use subdomain URLs
+              setStoreUrl(`https://${storeSlugValue}.${baseDomain}`);
+            }
           }
           // Show social media kit only if store name exists and store is enabled
           setShowSocialMediaKit(!!storeNameValue && websiteEnabled);

@@ -126,11 +126,17 @@ const WelcomeCard = ({ hasProducts, hasCustomizedStore, hasPaymentSetup }: Welco
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900 mb-1">Your Store Website</p>
                     <Link
-                      href={`/store/${storeName}`}
+                      href={
+                        typeof window !== 'undefined' && window.location.hostname === 'localhost'
+                          ? `/store/${storeName}`
+                          : `https://${storeName}.${process.env.NEXT_PUBLIC_BASE_DOMAIN || 'koopi.online'}`
+                      }
                       target="_blank"
                       className="text-sm text-gray-600 hover:text-gray-900 hover:underline flex items-center gap-1 break-all"
                     >
-                      {typeof window !== 'undefined' ? window.location.origin : ''}/store/{storeName}
+                      {typeof window !== 'undefined' && window.location.hostname === 'localhost'
+                        ? `${window.location.origin}/store/${storeName}`
+                        : `https://${storeName}.${process.env.NEXT_PUBLIC_BASE_DOMAIN || 'koopi.online'}`}
                       <ExternalLink className="w-3 h-3 flex-shrink-0" />
                     </Link>
                   </div>

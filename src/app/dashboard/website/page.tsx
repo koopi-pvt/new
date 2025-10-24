@@ -359,8 +359,21 @@ export default function WebsitePage() {
     );
   }
 
-  // Use the actual store slug for the URL
-  const storeUrl = storeSlug ? `/store/${storeSlug}` : '#';
+  // Generate store URL - use subdomain format for production, path-based for localhost
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'koopi.online';
+  const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+  
+  const storeUrl = storeSlug 
+    ? (isLocalhost 
+        ? `/store/${storeSlug}` 
+        : `https://${storeSlug}.${baseDomain}`)
+    : '#';
+  
+  const displayStoreUrl = storeSlug
+    ? (isLocalhost
+        ? `${typeof window !== 'undefined' ? window.location.origin : ''}/store/${storeSlug}`
+        : `https://${storeSlug}.${baseDomain}`)
+    : '';
 
   const renderSection = (sectionKey: string) => {
     switch (sectionKey) {
@@ -581,8 +594,8 @@ export default function WebsitePage() {
               {websiteEnabled && storeName && (
                 <div className="flex items-center gap-2 text-sm text-gray-600 flex-wrap">
                   <span>Your URL:</span>
-                  <Link href={storeUrl} target="_blank" className="font-medium text-gray-900 hover:underline break-all">
-                    {typeof window !== 'undefined' ? window.location.origin : ''}{storeUrl}
+                  <Link href={storeUrl} target="_blank" className="font-medium text-blue-600 hover:underline break-all">
+                    {displayStoreUrl}
                   </Link>
                 </div>
               )}
