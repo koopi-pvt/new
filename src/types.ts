@@ -5,6 +5,7 @@ export type Product = {
   price: number;
   compareAtPrice?: number;
   description: string;
+  longDescription?: string;
   status: string;
   images?: string[];
   imageUrls?: string[];
@@ -60,7 +61,8 @@ export type StoreData = {
   storeName: string;
   storeDescription: string;
   storeCategory: string;
-  ownerId: string;
+  ownerId?: string;
+  userId?: string;
   website?: {
     enabled: boolean;
     logo?: string;

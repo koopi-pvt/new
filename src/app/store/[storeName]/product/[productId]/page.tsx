@@ -59,7 +59,13 @@ export default function ProductDetailPage() {
     if (!store) return;
     try {
       const productDoc = await getDoc(doc(db, 'products', productId));
-      if (productDoc.exists() && productDoc.data().storeId === store.ownerId) {
+      const storeId = store.userId || store.ownerId;
+      if (!storeId) {
+        setError('Store ID not found');
+        setLoading(false);
+        return;
+      }
+      if (productDoc.exists() && productDoc.data().storeId === storeId) {
         const productData = { id: productDoc.id, ...productDoc.data() } as any;
         
         // Transform variants if they are in the old format
@@ -207,7 +213,7 @@ export default function ProductDetailPage() {
     addToCart(
       {
         productId: product.id,
-        storeId: store.ownerId,
+        storeId: store.userId || store.ownerId || '',
         storeName: store.storeName,
         name: product.name,
         price: typeof product.price === 'number' ? product.price : parseFloat(product.price || '0'),
@@ -357,7 +363,7 @@ export default function ProductDetailPage() {
               </div>
               <ReviewSubmission
                 productId={product.id}
-                storeId={store.ownerId}
+                storeId={store.userId || store.ownerId || ''}
                 buyerId={buyer.uid}
                 buyerEmail={buyer.email || ''}
                 buyerName={buyerProfile.name}

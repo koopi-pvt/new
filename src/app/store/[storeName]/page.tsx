@@ -16,6 +16,7 @@ import { InlineLoader } from '@/components/ui/InlineLoader';
 import ProductCard from '@/components/store/ProductCard';
 import { Product } from '@/types';
 import { ProductFilter, FilterState } from '@/components/store/ProductFilter';
+import { ProductListSkeleton } from '@/components/ui/ProductListSkeleton';
 
 export default function StorePage() {
   const { storeData: store, loading } = useStore();
@@ -51,7 +52,11 @@ export default function StorePage() {
     setProductsLoading(true);
     try {
       const productsRef = collection(db, 'products');
-      const productsQuery = query(productsRef, where('storeId', '==', store.ownerId), where('status', '==', 'Active'));
+      const storeId = store.userId || store.ownerId;
+      if (!storeId) {
+        throw new Error('Store ID not found');
+      }
+      const productsQuery = query(productsRef, where('storeId', '==', storeId), where('status', '==', 'Active'));
       const productsSnapshot = await getDocs(productsQuery);
       const productsData = productsSnapshot.docs.map(doc => {
         const data = { id: doc.id, ...doc.data() } as Product;
@@ -120,9 +125,11 @@ export default function StorePage() {
     e.preventDefault(); // Prevent navigation to product page
     e.stopPropagation();
     
+    const storeId = store.userId || store.ownerId || '';
+    
     addToCart({
       productId: product.id,
-      storeId: store.ownerId,
+      storeId: storeId,
       storeName: store?.storeName || storeName,
       name: product.name,
       price: product.price ?? 0,
@@ -304,11 +311,11 @@ export default function StorePage() {
             <h2 className="text-2xl sm:text-3xl font-bold mb-6" style={{ color: theme.textColor }}>Products</h2>
 
             {productsLoading ? (
-              <InlineLoader 
-                message="Loading products..." 
-                primaryColor={theme.primaryColor}
-                size="md"
-              />
+              <ProductListSkeleton theme={{
+                primaryColor: theme.primaryColor,
+                backgroundColor: theme.backgroundColor || '#ffffff',
+                textColor: theme.textColor || '#000000'
+              }} />
             ) : products.length > 0 ? (
               <>
                 <ProductFilter

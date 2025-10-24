@@ -1,17 +1,14 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { PageLoader } from './ui/PageLoader';
 
 const withOnboarding = <P extends object>(WrappedComponent: React.ComponentType<P>) => {
   const Wrapper = (props: P) => {
     const { user, userProfile, loading } = useAuth();
     const router = useRouter();
-    const pathname = usePathname();
 
     useEffect(() => {
       if (loading) return;
@@ -21,35 +18,22 @@ const withOnboarding = <P extends object>(WrappedComponent: React.ComponentType<
         return;
       }
 
-      if (userProfile) {
-        const isOnboardingComplete = userProfile.onboarding?.isCompleted;
-        const isOnboardingPage = pathname === '/onboarding';
-
-        if (isOnboardingComplete && isOnboardingPage) {
-          router.push('/dashboard');
-        } else if (!isOnboardingComplete && !isOnboardingPage) {
-          router.push('/onboarding');
-        }
+      // If user doesn't have onboarding completed, redirect to signup
+      if (userProfile && !userProfile.onboarding?.isCompleted) {
+        router.push('/signup');
       }
-    }, [user, userProfile, loading, router, pathname]);
+    }, [user, userProfile, loading, router]);
 
     if (loading || !userProfile) {
       return <PageLoader message="Verifying your details..." />;
     }
 
-    // Render children if the routing conditions are met
-    const isOnboardingComplete = userProfile.onboarding?.isCompleted;
-    const isOnboardingPage = pathname === '/onboarding';
-
-    if (isOnboardingComplete && !isOnboardingPage) {
-      return <WrappedComponent {...props} />;
-    }
-    
-    if (!isOnboardingComplete && isOnboardingPage) {
+    // If onboarding is complete, render the component
+    if (userProfile.onboarding?.isCompleted) {
       return <WrappedComponent {...props} />;
     }
 
-    return <PageLoader message="Redirecting..." />;
+    return <PageLoader message="Redirecting to complete setup..." />;
   };
 
   return Wrapper;

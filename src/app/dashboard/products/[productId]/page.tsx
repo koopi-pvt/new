@@ -2,9 +2,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { db, storage } from '@/firebase';
+import { db } from '@/firebase';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { uploadFile } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
 import { X, Upload, ArrowRight, ArrowLeft, Package, DollarSign, Image as ImageIcon, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,6 +12,7 @@ import { VariantEditor } from '@/components/dashboard/VariantEditor';
 import { ReviewManagement } from '@/components/dashboard/ReviewManagement';
 import { RelatedProductSelector } from '@/components/dashboard/RelatedProductSelector';
 import { PageLoader } from '@/components/ui/PageLoader';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
 
 const EditProductPage = () => {
   const { user, loading: authLoading } = useAuth();
@@ -24,7 +25,8 @@ const EditProductPage = () => {
   
   // Form states
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(''); // Short description
+  const [longDescription, setLongDescription] = useState(''); // Long description
   const [status, setStatus] = useState('Active');
   const [type, setType] = useState('');
   const [vendor, setVendor] = useState('');
@@ -101,6 +103,7 @@ const EditProductPage = () => {
       // Populate form fields
       setTitle(data.name || '');
       setDescription(data.description || '');
+      setLongDescription(data.longDescription || '');
       setStatus(data.status || 'Active');
       setType(data.type || '');
       setVendor(data.vendor || '');
@@ -211,10 +214,8 @@ const EditProductPage = () => {
       for (let i = 0; i < mediaFiles.length; i++) {
         const file = mediaFiles[i];
         const uniqueId = Date.now() + Math.random().toString(36).substring(2, 9);
-        const storageRef = ref(storage, `products/${user!.uid}/${uniqueId}_${file.name}`);
         
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
+        const url = await uploadFile('products', `products/${user!.uid}/${uniqueId}_${file.name}`, file);
         uploadedUrls.push(url);
         
         setUploadProgress(Math.round(((i + 1) / mediaFiles.length) * 100));
@@ -243,9 +244,10 @@ const EditProductPage = () => {
     }
 
     // Validate description minimum word count
-    const descriptionWords = description.trim().split(/\s+/).filter(word => word.length > 0);
+    const shortDescText = description.replace(/<[^>]*>/g, ''); // Strip HTML tags
+    const descriptionWords = shortDescText.trim().split(/\s+/).filter(word => word.length > 0);
     if (descriptionWords.length < 20) {
-      alert(`Description must be at least 20 words. Currently: ${descriptionWords.length} words`);
+      alert(`Short description must be at least 20 words. Currently: ${descriptionWords.length} words`);
       return;
     }
 
@@ -274,6 +276,7 @@ const EditProductPage = () => {
       const productData = {
         name: title.trim(),
         description: description.trim(),
+        longDescription: longDescription.trim(),
         status: status,
         price: parseFloat(price) || 0,
         compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : null,
@@ -409,18 +412,29 @@ const EditProductPage = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-900 mb-2">
-                    Description <span className="text-red-500">*</span>
+                    Short Description <span className="text-red-500">*</span>
                   </label>
-                  <textarea
+                  <RichTextEditor
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={4}
-                    placeholder="Describe your product features, benefits, and specifications..."
-                    className="w-full px-4 py-3 bg-white/80 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm shadow-sm resize-none"
+                    onChange={setDescription}
+                    placeholder="Briefly describe your product... Tell customers what makes it special!"
+                    minHeight="150px"
                   />
                   <p className="text-xs text-gray-500 mt-1.5">
-                    Minimum 20 words required. Current: {description.trim().split(/\s+/).filter(word => word.length > 0).length} words
+                    Minimum 20 words required. Current: {description.replace(/<[^>]*>/g, '').trim().split(/\s+/).filter(word => word.length > 0).length} words
                   </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Long Description
+                  </label>
+                  <RichTextEditor
+                    value={longDescription}
+                    onChange={setLongDescription}
+                    placeholder="Provide a detailed description of your product including features, specifications, materials, etc."
+                    minHeight="200px"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

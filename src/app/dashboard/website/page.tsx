@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { db, storage } from '@/firebase';
+import { db } from '@/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadFile } from '@/lib/supabase';
 import { Globe, Save, Eye, EyeOff, Palette, Type, Image as ImageIcon, ExternalLink, Upload, Trash2, Layout, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { DndContext, closestCenter } from '@dnd-kit/core';
@@ -207,9 +207,7 @@ export default function WebsitePage() {
 
     setUploadingLogo(true);
     try {
-      const storageRef = ref(storage, `stores/${user.uid}/logo/${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      const url = await uploadFile('logos', `stores/${user.uid}/logo/${file.name}`, file);
 
       // Also update the user's profile
       const userRef = doc(db, 'users', user.uid);

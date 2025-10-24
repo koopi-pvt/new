@@ -66,10 +66,23 @@ export function ModernProductLayout({
           </div>
           <div className="border-t pt-6" style={{ borderColor: theme.textColor + '20' }}>
             <h2 className="text-lg font-semibold mb-3" style={{ color: theme.textColor }}>Description</h2>
-            <p className="leading-relaxed whitespace-pre-wrap" style={{ color: theme.textColor, opacity: 0.8 }}>
-              {product.description || 'No description available'}
-            </p>
+            <div 
+              className="leading-relaxed whitespace-pre-wrap rich-text-content"
+              style={{ color: theme.textColor, opacity: 0.8 }}
+              dangerouslySetInnerHTML={{ __html: product.description || 'No description available' }}
+            />
           </div>
+
+          {product.longDescription && (
+            <div className="border-t pt-6" style={{ borderColor: theme.textColor + '20' }}>
+              <h2 className="text-lg font-semibold mb-3" style={{ color: theme.textColor }}>Detailed Description</h2>
+              <div 
+                className="leading-relaxed rich-text-content"
+                style={{ color: theme.textColor, opacity: 0.8 }}
+                dangerouslySetInnerHTML={{ __html: product.longDescription }}
+              />
+            </div>
+          )}
 
           {product.variants && product.variants.length > 0 && (
             <div className="border-t pt-6" style={{ borderColor: theme.textColor + '20' }}>

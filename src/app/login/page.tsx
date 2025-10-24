@@ -30,14 +30,8 @@ function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Check onboarding status
-      const userDocRef = doc(db, 'users', user.uid);
-      const docSnap = await getDoc(userDocRef);
-      if (docSnap.exists() && docSnap.data().onboarding?.isCompleted) {
-        router.push('/dashboard');
-      } else {
-        router.push('/onboarding');
-      }
+      // Redirect to dashboard
+      router.push('/dashboard');
     } catch (error: any) {
       setIsLoading(false);
       if (error.code === 'auth/invalid-credential') {

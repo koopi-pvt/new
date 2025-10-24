@@ -6,7 +6,7 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { db } from '@/firebase';
 import { StoreContext } from '@/contexts/StoreContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { UniversalLoader } from '@/components/ui/UniversalLoader';
+import { StoreSkeletonLoader } from '@/components/ui/StoreSkeletonLoader';
 
 import { StoreData } from '@/types';
 
@@ -34,13 +34,18 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         return;
       }
 
-      const ownerId = snapshot.docs[0].data().ownerId;
+      const ownerId = snapshot.docs[0].data().userId;
       if (ownerId) {
         const storeDocRef = doc(db, 'stores', ownerId);
         const storeDocSnap = await getDoc(storeDocRef);
 
         if (storeDocSnap.exists()) {
-          setStoreData(storeDocSnap.data() as StoreData);
+          // Combine store document data with store name from storeNames collection
+          const storeNameData = snapshot.docs[0].data();
+          setStoreData({
+            ...storeDocSnap.data(),
+            storeName: storeNameData.storeName
+          } as StoreData);
         } else {
           setStoreData(null);
         }
@@ -55,20 +60,19 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   };
 
   if (loading) {
-    // Use theme-aware loading if we have storeData, otherwise use defaults
+    // Use skeleton loader for better UX
     const theme = storeData?.website?.theme || { 
       primaryColor: '#000000', 
       backgroundColor: '#ffffff' 
     };
     
     return (
-      <UniversalLoader 
-        size="lg"
-        primaryColor={theme.primaryColor}
-        backgroundColor={theme.backgroundColor}
-        fullscreen={true}
-        message="Loading store..."
-      />
+      <ThemeProvider>
+        <StoreSkeletonLoader 
+          primaryColor={theme.primaryColor}
+          backgroundColor={theme.backgroundColor}
+        />
+      </ThemeProvider>
     );
   }
 
