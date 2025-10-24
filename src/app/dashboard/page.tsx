@@ -24,7 +24,7 @@ const DashboardHomePage = () => {
   const [isStoreEnabled, setIsStoreEnabled] = useState(false);
   const [showSocialMediaKit, setShowSocialMediaKit] = useState(false);
   const [welcomeCardCompleted, setWelcomeCardCompleted] = useState(false);
-  const [storeDataLoading, setStoreDataLoading] = useState(true); // New state for store data loading
+  const [storeDataLoading, setStoreDataLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -38,8 +38,9 @@ const DashboardHomePage = () => {
           setWelcomeCardCompleted(storeData.hasProducts === true && storeData.hasCustomizedStore === true);
           setStoreName(storeData.storeName || '');
           
-          // Check if store is enabled
-          const websiteEnabled = storeData.website?.enabled === true;
+          // Check if store is enabled - more robust check
+          const websiteData = storeData.website || {};
+          const websiteEnabled = websiteData.enabled === true;
           setIsStoreEnabled(websiteEnabled);
           
           if (storeData.storeName) {
@@ -51,7 +52,6 @@ const DashboardHomePage = () => {
         } else {
           console.log("No store document found for user:", user.uid); // Debug log
         }
-        // Set loading to false once we have the data
         setStoreDataLoading(false);
       });
       return () => unsubscribe();
@@ -75,7 +75,6 @@ const DashboardHomePage = () => {
         </AnimatedWidget>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8 items-start">
           <div className="lg:col-span-3 space-y-6 sm:space-y-8">
-            {/* Only show welcome card or main content when store data is loaded */}
             {!storeDataLoading && (
               welcomeCardCompleted ? (
                 <AnimatedWidget>
@@ -106,7 +105,6 @@ const DashboardHomePage = () => {
               </AnimatedWidget>
             </div>
           ) : (
-            // Show a helpful message instead of hiding the section completely
             <div className="lg:col-span-2 space-y-6 sm:space-y-8">
               <div className="backdrop-blur-2xl bg-white/70 rounded-[24px] border border-white/30 shadow-2xl p-6 sm:p-8 h-full flex flex-col">
                 <div className="flex items-center gap-3 mb-4">
