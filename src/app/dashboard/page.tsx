@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, updateDoc } from 'firebase/firestore';
 import WelcomeCard from '@/components/dashboard/WelcomeCard';
 import SocialMediaKitCard from '@/components/dashboard/SocialMediaKitCard';
 import QuickLookWidget from '@/components/dashboard/QuickLookWidget';
@@ -29,26 +29,55 @@ const DashboardHomePage = () => {
   useEffect(() => {
     if (user) {
       const storeDocRef = doc(db, "stores", user.uid);
-      const unsubscribe = onSnapshot(storeDocRef, (docSnap) => {
+      const unsubscribe = onSnapshot(storeDocRef, async (docSnap) => {
         if (docSnap.exists()) {
           const storeData = docSnap.data();
           console.log("Store data:", storeData); // Debug log
           setHasProducts(storeData.hasProducts === true);
           setHasCustomizedStore(storeData.hasCustomizedStore === true);
           setWelcomeCardCompleted(storeData.hasProducts === true && storeData.hasCustomizedStore === true);
-          setStoreName(storeData.storeName || '');
+          
+          // Get storeName from store document, or fetch from users collection if missing
+          let storeNameValue = storeData.storeName || '';
+          let storeSlugValue = storeData.storeNameSlug || '';
+          
+          if (!storeNameValue || !storeSlugValue) {
+            try {
+              // Fetch from users collection
+              const userDocRef = doc(db, "users", user.uid);
+              const userDoc = await getDoc(userDocRef);
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                storeNameValue = storeNameValue || userData.storeName || '';
+                storeSlugValue = storeSlugValue || userData.storeNameSlug || '';
+                
+                // Update store document with storeName if it was missing
+                if ((userData.storeName || userData.storeNameSlug) && (!storeData.storeName || !storeData.storeNameSlug)) {
+                  await updateDoc(storeDocRef, {
+                    storeName: userData.storeName || storeNameValue,
+                    storeNameSlug: userData.storeNameSlug || storeSlugValue
+                  });
+                  console.log("Updated store document with storeName from users collection");
+                }
+              }
+            } catch (error) {
+              console.error("Error fetching storeName from users collection:", error);
+            }
+          }
+          
+          setStoreName(storeNameValue);
           
           // Check if store is enabled - more robust check
           const websiteData = storeData.website || {};
           const websiteEnabled = websiteData.enabled === true;
           setIsStoreEnabled(websiteEnabled);
           
-          if (storeData.storeName) {
+          if (storeSlugValue) {
             const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-            setStoreUrl(`${baseUrl}/store/${storeData.storeName}`);
+            setStoreUrl(`${baseUrl}/store/${storeSlugValue}`);
           }
           // Show social media kit only if store name exists and store is enabled
-          setShowSocialMediaKit(!!storeData.storeName && websiteEnabled);
+          setShowSocialMediaKit(!!storeNameValue && websiteEnabled);
         } else {
           console.log("No store document found for user:", user.uid); // Debug log
         }

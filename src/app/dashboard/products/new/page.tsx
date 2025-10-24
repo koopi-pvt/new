@@ -343,11 +343,17 @@ const AddProductPage = () => {
           updatedAt: serverTimestamp()
         });
       } else {
+        // Fetch storeName from users collection
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userData = userDoc.exists() ? userDoc.data() : {};
+        
         await setDoc(storeRef, {
           hasProducts: true,
           hasCustomizedStore: false,
           hasPaymentSetup: false,
           userId: user.uid,
+          storeName: userData.storeName || '',
+          storeNameSlug: userData.storeNameSlug || '',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
